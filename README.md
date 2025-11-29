@@ -65,3 +65,7 @@ Environment variables (`.env`):
 | `HF_TOKEN` | Hugging Face API token | Required |
 | `DEVICE` | Device to use (`cuda` or `cpu`) | `cuda` |
 | `MAX_NEW_TOKENS` | Default max tokens to generate | `128` |
+
+## Author
+
+Ville pakarinen (@vpakarinen2)
