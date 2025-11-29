@@ -16,7 +16,7 @@ A Gradio-based web interface for text generation (Gemma3 4B as a default model).
 
 1. Clone the repository:
 ```
-git clone https://github.com/yourusername/llm-text-gradio-webui.git
+git clone https://github.com/vpakarinen2/llm-text-gradio-webui.git
 cd llm-text-gradio-webui
 ```
 
@@ -28,7 +28,7 @@ python -m venv .venv
 .venv\Scripts\activate
 
 # Linux/Mac
-source .venv/bin/activate  # Linux/Mac
+source .venv/bin/activate
 ```
 
 3. Install PyTorch with CUDA:
