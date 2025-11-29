@@ -2,6 +2,10 @@
 
 A Gradio-based web interface for text generation (Gemma3 4B as a default model).
 
+## Screenshots
+
+![Chat Interface](screenshots/chat.png)
+
 ## Requirements
 
 - NVIDIA GPU (8GB+ VRAM)
