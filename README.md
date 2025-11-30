@@ -1,6 +1,6 @@
 # LLM Text WebUI
 
-A Gradio-based web interface for text generation (Gemma3 4B as a default model).
+A Gradio web interface for text generation (Gemma3 4B as a default model).
 
 ## Screenshots
 
