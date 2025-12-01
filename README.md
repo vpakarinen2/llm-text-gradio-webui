@@ -52,6 +52,15 @@ DEVICE=cuda
 GRADIO_ANALYTICS_ENABLED=False
 ```
 
+## Hugging Face Token
+
+1. Log in to Hugging Face
+2. Create an access token (Settings → Access Tokens).
+3. Log in:
+```
+huggingface-cli login
+```
+
 ## Usage
 
 ```
