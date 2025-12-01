@@ -44,9 +44,12 @@ pip install -r requirements.txt
 
 5. Create `.env` file:
 ```
+EMBED_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
 HF_TOKEN=<HF_token_here>
 MAX_NEW_TOKENS=128
 DEVICE=cuda
+
+GRADIO_ANALYTICS_ENABLED=False
 ```
 
 ## Usage
