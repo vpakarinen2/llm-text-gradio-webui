@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+
 from pathlib import Path
 
 from app.inference import make_generation_config, generate_reply, stream_reply
@@ -246,3 +247,4 @@ def handle_rag_message(
 
     status = f"Retrieved {len(retrieved)} document(s) for this answer."
     return history, "", status
+
