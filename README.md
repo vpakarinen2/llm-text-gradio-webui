@@ -1,4 +1,4 @@
-# LLM Text WebUI
+# LLM Text WebUI (+RAG)
 
 A Gradio web interface for text generation (Gemma3 4B as a default model).
 
