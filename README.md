@@ -39,7 +39,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 4. Install dependencies:
 ```
-pip install -r requirements.txt
+pip install -r requirements.txt --no-deps
 ```
 
 5. Create `.env` file:
