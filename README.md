@@ -34,12 +34,12 @@ source .venv/bin/activate
 
 3. Install PyTorch with CUDA:
 ```
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio
 ```
 
 4. Install dependencies:
 ```
-pip install -r requirements.txt --no-deps
+pip install -r requirements.txt
 ```
 
 5. Create `.env` file:
