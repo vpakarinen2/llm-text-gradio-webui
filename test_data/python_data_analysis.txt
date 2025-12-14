@@ -1,0 +1,17 @@
+Title: Getting Started with Python Data Analysis
+
+Python is a versatile language widely used for data analysis.
+The core ecosystem includes NumPy for numerical arrays, Pandas for tabular data,
+and Matplotlib or Seaborn for visualization.
+
+A typical workflow:
+1. Load data from CSV using pandas.read_csv.
+2. Clean missing values with dropna or fillna.
+3. Aggregate with groupby to compute statistics.
+4. Visualize results with histograms or line charts.
+
+Example:
+- Use DataFrame.describe() to quickly inspect distributions.
+- Use df.groupby("country")["sales"].sum() to aggregate sales by country.
+
+For larger-than-memory datasets, tools like Dask or Polars can be helpful.

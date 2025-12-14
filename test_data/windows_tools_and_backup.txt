@@ -1,0 +1,16 @@
+Title: Windows Tools and Backup Strategy
+
+On Windows, keeping reliable backups is crucial before major changes.
+
+Tools:
+- Rufus: creates bootable USB drives for installing operating systems.
+- Windows Backup and Restore: built-in backup utility for system images.
+- PowerShell: advanced scripting and automation tool.
+
+Recommended backup steps:
+1. Use Rufus to create a bootable USB installer before reinstalling Windows.
+2. Create a system image on an external drive.
+3. Export important files from Desktop, Documents, and Downloads.
+4. Test the bootable USB on your machine to ensure it works.
+
+Always verify backups before formatting any drive.
