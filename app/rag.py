@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-import os
 
 from sentence_transformers import SentenceTransformer
 from app.config import get_config
@@ -12,15 +11,13 @@ _EMBED_MODEL: SentenceTransformer | None = None
 _DOC_EMBEDDINGS: np.ndarray | None = None
 _DOC_TEXTS: List[str] = []
 
-_EMBED_MODEL_ID = os.getenv("EMBED_MODEL_ID", "sentence-transformers/all-MiniLM-L6-v2")
-
 
 def get_embed_model() -> SentenceTransformer:
     global _EMBED_MODEL
     if _EMBED_MODEL is None:
         cfg = get_config()
         device = cfg.device if cfg.device in {"cuda", "cpu"} else "cpu"
-        _EMBED_MODEL = SentenceTransformer(_EMBED_MODEL_ID, device=device)
+        _EMBED_MODEL = SentenceTransformer(cfg.embed_model_id, device=device)
     return _EMBED_MODEL
 
 
