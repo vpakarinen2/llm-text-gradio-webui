@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-import logging
 import threading
-import time
-from typing import Dict, Iterator, List, Optional, Any
-
+import logging
 import torch
+import time
+
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     TextIteratorStreamer,
 )
 
-from app.config import AppConfig, get_config
 from app.models.base import BaseLLM, ChatMessage, GenerationConfig
+from typing import Dict, Iterator, List, Optional, Any
+from app.config import AppConfig, get_config
 
 
 LOGGER = logging.getLogger(__name__)
@@ -38,30 +38,25 @@ class GemmaHF(BaseLLM):
     def __init__(self, config: Optional[AppConfig] = None) -> None:
         self._config = config or get_config()
         self._device = torch.device(self._config.device)
-        
+
         if self._device.type == "cuda":
             torch.cuda.init()
             torch.cuda.set_device(self._device.index or 0)
 
         LOGGER.info("Loading tokenizer for model_id=%s", self._config.model_id)
 
-        tokenizer_kwargs: Dict[str, Any] = {}
-        if self._config.hf_token:
-            tokenizer_kwargs["token"] = self._config.hf_token
-
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            self._config.model_id,
-            **tokenizer_kwargs,
-        )
+        self._tokenizer = AutoTokenizer.from_pretrained(self._config.model_id)
 
         dtype = _resolve_torch_dtype(self._config.torch_dtype)
         model_kwargs: Dict[str, Any] = {}
-        if self._config.hf_token:
-            model_kwargs["token"] = self._config.hf_token
         if dtype is not None:
             model_kwargs["torch_dtype"] = dtype
 
-        LOGGER.info("Loading model for model_id=%s on device=%s", self._config.model_id, self._device)
+        LOGGER.info(
+            "Loading model for model_id=%s on device=%s",
+            self._config.model_id,
+            self._device,
+        )
 
         if self._device.type == "cuda":
             model_kwargs["device_map"] = "cuda:0"
@@ -177,7 +172,6 @@ class GemmaHF(BaseLLM):
 
         def _worker() -> None:
             try:
-                # Ensure CUDA context in worker thread
                 if self._device.type == "cuda":
                     torch.cuda.set_device(self._device.index or 0)
                 with torch.no_grad():
