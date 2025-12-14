@@ -219,6 +219,6 @@ def build_demo() -> gr.Blocks:
                 outputs=rag_outputs,
             )
 
-        demo.queue(default_concurrency_limit=1)
+        demo.queue(default_concurrency_limit=cfg.queue_concurrency_limit)
 
     return demo
