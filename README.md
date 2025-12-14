@@ -45,9 +45,20 @@ pip install -r requirements.txt
 5. Create `.env` file:
 ```
 EMBED_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
-GRADIO_ANALYTICS_ENABLED=False
-MAX_NEW_TOKENS=128
+MODEL_ID=google/gemma-3-4b-it
+TORCH_DTYPE=bfloat16
+HOST=localhost
 DEVICE=cuda
+SHARE=False
+PORT=7860
+
+QUEUE_CONCURRENCY_LIMIT=1
+MAX_NEW_TOKENS=128
+TEMPERATURE=0.7
+TOP_P=0.95
+TOP_K=40
+
+GRADIO_ANALYTICS_ENABLED=False
 ```
 
 ## Hugging Face Token
