@@ -6,7 +6,6 @@ import os
 
 from dataclasses import dataclass
 from dotenv import load_dotenv
-from typing import Optional
 
 
 load_dotenv()
@@ -45,24 +44,24 @@ def _detect_device() -> str:
 @dataclass(frozen=True)
 class AppConfig:
     """Immutable configuration object for the WebUI."""
-    # Core model settings
     model_id: str = os.getenv("MODEL_ID", "google/gemma-3-4b-it")
-    hf_token: Optional[str] = os.getenv("HF_TOKEN")
 
-    # Runtime / device configuration
+    embed_model_id: str = os.getenv(
+        "EMBED_MODEL_ID", "sentence-transformers/all-MiniLM-L6-v2"
+    )
+
     device: str = _detect_device()
     torch_dtype: str = os.getenv("TORCH_DTYPE", "bfloat16")
 
-    # Default generation parameters
     default_max_new_tokens: int = int(os.getenv("MAX_NEW_TOKENS", "512"))
     default_temperature: float = float(os.getenv("TEMPERATURE", "0.7"))
     default_top_p: float = float(os.getenv("TOP_P", "0.9"))
     default_top_k: int = int(os.getenv("TOP_K", "40"))
 
-    # Gradio / server settings
     host: str = os.getenv("HOST", "localhost")
     port: int = int(os.getenv("PORT", "7860"))
     share: bool = _get_bool_env("SHARE", False)
+    queue_concurrency_limit: int = int(os.getenv("QUEUE_CONCURRENCY_LIMIT", "1"))
 
 
 _CONFIG = AppConfig()
