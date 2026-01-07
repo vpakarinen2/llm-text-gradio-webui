@@ -10,6 +10,8 @@ import time
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    StoppingCriteria,
+    StoppingCriteriaList,
     TextIteratorStreamer,
 )
 
@@ -43,9 +45,27 @@ class GemmaHF(BaseLLM):
             torch.cuda.init()
             torch.cuda.set_device(self._device.index or 0)
 
-        LOGGER.info("Loading tokenizer for model_id=%s", self._config.model_id)
+        LOGGER.info(
+            "Loading tokenizer for model_id=%s (trust_remote_code=%s)",
+            self._config.model_id,
+            self._config.trust_remote_code,
+        )
 
-        self._tokenizer = AutoTokenizer.from_pretrained(self._config.model_id)
+        try:
+            self._tokenizer = AutoTokenizer.from_pretrained(
+                self._config.model_id,
+                trust_remote_code=self._config.trust_remote_code,
+            )
+        except Exception as exc:
+            message = str(exc)
+            if (
+                not self._config.trust_remote_code
+                and "trust_remote_code" in message.lower()
+            ):
+                raise RuntimeError(
+                    "Tokenizer requires executing remote code. Set TRUST_REMOTE_CODE=true in your .env to allow it."
+                ) from exc
+            raise
 
         dtype = _resolve_torch_dtype(self._config.torch_dtype)
         model_kwargs: Dict[str, Any] = {}
@@ -53,18 +73,31 @@ class GemmaHF(BaseLLM):
             model_kwargs["torch_dtype"] = dtype
 
         LOGGER.info(
-            "Loading model for model_id=%s on device=%s",
+            "Loading model for model_id=%s on device=%s (trust_remote_code=%s)",
             self._config.model_id,
             self._device,
+            self._config.trust_remote_code,
         )
 
         if self._device.type == "cuda":
-            model_kwargs["device_map"] = "cuda:0"
+            model_kwargs["device_map"] = "auto"
         
-        self._model = AutoModelForCausalLM.from_pretrained(
-            self._config.model_id,
-            **model_kwargs,
-        )
+        try:
+            self._model = AutoModelForCausalLM.from_pretrained(
+                self._config.model_id,
+                trust_remote_code=self._config.trust_remote_code,
+                **model_kwargs,
+            )
+        except Exception as exc:
+            message = str(exc)
+            if (
+                not self._config.trust_remote_code
+                and "trust_remote_code" in message.lower()
+            ):
+                raise RuntimeError(
+                    "Model requires executing remote code. Set TRUST_REMOTE_CODE=true in your .env to allow it."
+                ) from exc
+            raise
         
         if "device_map" not in model_kwargs:
             self._model.to(self._device)
@@ -81,12 +114,22 @@ class GemmaHF(BaseLLM):
             for message in messages
         ]
 
-        prompt = self._tokenizer.apply_chat_template(
-            payload,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
-        return prompt
+        try:
+            prompt = self._tokenizer.apply_chat_template(
+                payload,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+            return prompt
+        except Exception:
+            joined = ""
+            for item in payload:
+                role = item.get("role", "user")
+                content = (item.get("content") or "").strip()
+                if content:
+                    joined += f"{role}: {content}\n"
+            joined += "assistant:"
+            return joined
 
     def _encode_prompt(self, prompt: str) -> Dict[str, torch.Tensor]:
         """Tokenize the prompt and move tensors to configured device."""
@@ -146,8 +189,11 @@ class GemmaHF(BaseLLM):
     ) -> Iterator[str]:
         """Generate a response as a stream of text chunks."""
         LOGGER.info(
-            "GemmaHF.stream_generate: start (max_new_tokens=%d)",
+            "GemmaHF.stream_generate: start (max_new_tokens=%d, temp=%.3f, top_p=%.3f, top_k=%d)",
             config.max_new_tokens,
+            config.temperature,
+            config.top_p,
+            config.top_k,
         )
         
         prompt = self._build_prompt(messages)
@@ -159,6 +205,12 @@ class GemmaHF(BaseLLM):
             skip_special_tokens=True,
         )
 
+        stop_event = threading.Event()
+
+        class _CancelStoppingCriteria(StoppingCriteria):
+            def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs: Any) -> bool:  # type: ignore[override]
+                return stop_event.is_set()
+
         generation_kwargs: Dict[str, Any] = {
             "max_new_tokens": config.max_new_tokens,
             "do_sample": True,
@@ -168,6 +220,7 @@ class GemmaHF(BaseLLM):
             "pad_token_id": self._tokenizer.pad_token_id,
             "eos_token_id": self._tokenizer.eos_token_id,
             "streamer": streamer,
+            "stopping_criteria": StoppingCriteriaList([_CancelStoppingCriteria()]),
         }
 
         def _worker() -> None:
@@ -182,7 +235,13 @@ class GemmaHF(BaseLLM):
         thread = threading.Thread(target=_worker, daemon=True)
         thread.start()
 
-        for text in streamer:
-            yield text
+        try:
+            for text in streamer:
+                yield text
+        except GeneratorExit:
+            stop_event.set()
+            raise
+        finally:
+            stop_event.set()
         
         LOGGER.info("GemmaHF.stream_generate: done")
