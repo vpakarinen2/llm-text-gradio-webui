@@ -17,10 +17,26 @@ def build_demo() -> gr.Blocks:
     """Build the Gradio WebUI."""
     cfg = get_config()
 
-    with gr.Blocks(title="LLM Text WebUI") as demo:
+    busy_css = """
+    .gradio-container [aria-busy='true'] {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+    .gradio-container [aria-busy='true'] * {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .gradio-container :focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    """
+
+    with gr.Blocks(title="LLM Text WebUI", css=busy_css) as demo:
         gr.HTML(f"""
             <h1 style="text-align: center; margin-bottom: 0.5rem;">LLM Text WebUI</h1>
-            <p style="text-align: left;">Model: <code>{cfg.model_id}</code></p>
+            <p style="text-align: left;">model: <code>{cfg.model_id}</code></p>
         """)
 
         with gr.Tab("Chat"):
@@ -95,11 +111,13 @@ def build_demo() -> gr.Blocks:
                 handle_user_message,
                 inputs=chat_inputs,
                 outputs=chat_outputs,
+                show_progress="hidden",
             )
             submit_event = user_input.submit(
                 handle_user_message,
                 inputs=chat_inputs,
                 outputs=chat_outputs,
+                show_progress="hidden",
             )
 
             clear_btn.click(clear_history, inputs=None, outputs=chat_outputs)
@@ -122,6 +140,7 @@ def build_demo() -> gr.Blocks:
                         autofocus=False,
                     )
                     rag_send_btn = gr.Button("Send", variant="primary")
+                    rag_stop_btn = gr.Button("Stop", variant="stop")
                     rag_clear_btn = gr.Button("Clear")
 
                 rag_files = gr.File(
@@ -198,16 +217,25 @@ def build_demo() -> gr.Blocks:
                 outputs=[rag_status],
             )
 
-            rag_send_btn.click(
+            rag_submit_event = rag_user_input.submit(
                 handle_rag_message,
                 inputs=rag_inputs,
                 outputs=rag_outputs,
+                show_progress="hidden",
             )
 
-            rag_user_input.submit(
+            rag_send_event = rag_send_btn.click(
                 handle_rag_message,
                 inputs=rag_inputs,
                 outputs=rag_outputs,
+                show_progress="hidden",
+            )
+
+            rag_stop_btn.click(
+                fn=None,
+                inputs=None,
+                outputs=None,
+                cancels=[rag_send_event, rag_submit_event],
             )
 
             def _clear_rag() -> tuple[list[list[tuple[str, str]]], str, str]:
