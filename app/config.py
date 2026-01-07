@@ -1,4 +1,4 @@
-"""Application configuration for LLM Text Gradio WebUI."""
+"""Application configuration for LLM WebUI."""
 
 from __future__ import annotations
 
@@ -45,6 +45,7 @@ def _detect_device() -> str:
 class AppConfig:
     """Immutable configuration object for the WebUI."""
     model_id: str = os.getenv("MODEL_ID", "google/gemma-3-4b-it")
+    trust_remote_code: bool = _get_bool_env("TRUST_REMOTE_CODE", False)
 
     embed_model_id: str = os.getenv(
         "EMBED_MODEL_ID", "sentence-transformers/all-MiniLM-L6-v2"
