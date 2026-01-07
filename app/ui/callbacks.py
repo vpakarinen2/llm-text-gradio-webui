@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import gradio as gr
 import logging
 import time
 
-from typing import Iterator, List, Optional, Tuple
+from typing import List, Optional, Tuple
 from pathlib import Path
 
-from app.inference import make_generation_config, generate_reply, stream_reply
+from app.inference import make_generation_config, generate_reply
 from app.models.base import ChatMessage
 from app import rag
 
@@ -111,58 +110,6 @@ def clear_history() -> Tuple[ChatHistory, str]:
     return [], ""
 
 
-def handle_user_message_streaming(
-    user_message: str,
-    history: ChatHistory,
-    temperature: float,
-    top_p: float,
-    max_new_tokens: int,
-    top_k: int,
-    system_prompt: str,
-) -> Iterator[Tuple[ChatHistory, str]]:
-    """Streaming callback that yields partial responses."""
-    history = list(history) if history else []
-    user_message = (user_message or "").strip()
-    if not user_message:
-        yield history, ""
-        return
-
-    LOGGER.info(
-        "handle_user_message_streaming: start (len_history=%d, max_new_tokens=%d)",
-        len(history),
-        max_new_tokens,
-    )
-
-    messages = build_messages(history, user_message, system_prompt)
-
-    gen_config = make_generation_config(
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        top_p=top_p,
-        top_k=top_k,
-    )
-
-    history.append((user_message, ""))
-    yield history, ""
-    
-    accumulated = ""
-    last_yield_time = time.perf_counter()
-    MIN_YIELD_INTERVAL = 0.1
-    
-    for chunk in stream_reply(messages, gen_config):
-        accumulated += chunk
-        
-        now = time.perf_counter()
-        if now - last_yield_time >= MIN_YIELD_INTERVAL:
-            history[-1] = (user_message, accumulated)
-            yield history, ""
-            last_yield_time = now
-
-    history[-1] = (user_message, accumulated.strip())
-    LOGGER.info("handle_user_message_streaming: done (len_reply=%d)", len(accumulated))
-    yield history, ""
-
-
 def index_rag_files(files: List[Path]) -> str:
     """Index uploaded text files for RAG."""
     if not files:
@@ -246,86 +193,3 @@ def handle_rag_message(
 
     status = f"Retrieved {len(retrieved)} document(s) for this answer."
     return history, "", status
-
-
-def handle_rag_message_streaming(
-    user_message: str,
-    history: ChatHistory,
-    temperature: float,
-    top_p: float,
-    max_new_tokens: int,
-    top_k: int,
-    system_prompt: str,
-    top_k_docs: int,
-) -> Iterator[Tuple[ChatHistory, str, str]]:
-    history = list(history) if history else []
-    user_message = (user_message or "").strip()
-    if not user_message:
-        yield history, gr.update(), gr.update()
-        return
-
-    if rag.is_index_empty():
-        status = "No documents indexed. Upload and index files first."
-        yield history, gr.update(value=""), status
-        return
-
-    retrieved = rag.retrieve(user_message, top_k_docs)
-    if not retrieved:
-        status = "No relevant documents found for the query."
-        yield history, gr.update(value=""), status
-        return
-
-    max_total_chars = 8000
-    per_doc_limit = max_total_chars // len(retrieved)
-    if per_doc_limit < 1000:
-        per_doc_limit = 1000
-
-    context_blocks = []
-    for idx, (text, score) in enumerate(retrieved, start=1):
-        snippet = text.strip()
-        if len(snippet) > per_doc_limit:
-            snippet = snippet[:per_doc_limit]
-        context_blocks.append(f"[{idx}] (score={score:.3f})\n{snippet}")
-    context = "\n\n".join(context_blocks)
-
-    base_system = (system_prompt or "").strip()
-    augmented_system = (
-        (base_system + "\n\n" if base_system else "")
-        + "Use ONLY the following context to answer the user's question. "
-        + "If the answer is not in the context, say you don't know.\n\n"
-        + f"Context:\n{context}"
-    )
-
-    LOGGER.info(
-        "handle_rag_message_streaming: using %d context docs", len(retrieved)
-    )
-
-    gen_config = make_generation_config(
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        top_p=top_p,
-        top_k=top_k,
-    )
-
-    status = f"Retrieved {len(retrieved)} document(s) for this answer."
-
-    history.append((user_message, ""))
-    yield history, gr.update(value=""), status
-
-    messages = build_messages(history[:-1], user_message, augmented_system)
-
-    accumulated = ""
-    last_yield_time = time.perf_counter()
-    MIN_YIELD_INTERVAL = 0.1
-
-    for chunk in stream_reply(messages, gen_config):
-        accumulated += chunk
-
-        now = time.perf_counter()
-        if now - last_yield_time >= MIN_YIELD_INTERVAL:
-            history[-1] = (user_message, accumulated)
-            yield history, gr.update(), gr.update()
-            last_yield_time = now
-
-    history[-1] = (user_message, accumulated.strip())
-    yield history, gr.update(), gr.update()
