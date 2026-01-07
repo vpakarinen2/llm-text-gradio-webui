@@ -4,8 +4,8 @@ A Gradio web interface for text generation (Gemma3 4B default model).
 
 ## Screenshots
 
-![Chat Interface](chat_3.png)
-![RAG Chat Interface](rag_chat_2.png)
+![Chat Interface](chat_4.png)
+![RAG Chat Interface](rag_chat_3.png)
 
 ## Requirements
 
