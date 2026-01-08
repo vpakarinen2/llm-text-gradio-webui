@@ -1,6 +1,6 @@
 # LLM Gradio WebUI (text + RAG).
 
-A Gradio web interface for text generation (Gemma3 4B default model).
+A Gradio web interface for text generation (Qwen3-4B-Instruct default model).
 
 ## Screenshots
 
